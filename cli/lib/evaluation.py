@@ -33,8 +33,15 @@ def evaluate(limit):
             relevant_count += result['title'] in exp
         precision = relevant_count/limit
         retrieved = ", ".join([r['title'] for r in rrf_results])
+
+        recall = relevant_count/len(exp)
+        f1 = (2 * ((precision * recall) / (precision + recall))) if (precision + recall) > 0 else 0.0
+
         print(f"Query: {query}")
-        print(f"- Precision@{limit}: {precision}")
+        print(f"- Precision@{limit}: {precision:.4f}")
+        print(f"- Recall@{limit}: {recall:.4f}")
+        print(f"- F1@{limit}: {f1:.4f}")
+
 
         print(f"- Retrieved: {retrieved}")
         print(f"- Relevant: {', '.join(exp)}")

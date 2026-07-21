@@ -1,7 +1,7 @@
 import os
 
 from lib.search_utils import load_movies
-from lib.llm import correct_spelling, rewrite_query
+from lib.llm import correct_spelling, rewrite_query, llm_judge
 from lib.rerank import individual_rerank, batch_rerank, cross_encoder_rerank
 from .keyword_search import InvertedIndex
 from .semantic_search import ChunkedSemanticSearch
@@ -151,8 +151,9 @@ def weighted_search(query, alpha = 0.5, limit = 5):
         print(f"Hybrid score: {result['hybrid_score']}")
         print(f"BM25 score: {result['bm25_score']} and Semantic score: {result['sem_score']}")
         print(f"Description: {result['description'][:100]}")
+    
 
-def rrf_search(query, k = 60, limit = 5, enhance=None, rerank=None):
+def rrf_search(query, k = 60, limit = 5, enhance=None, rerank=None, evaluate=None):
     movies = load_movies()
     hs = HybridSearch(movies)
     match enhance:
@@ -187,11 +188,18 @@ def rrf_search(query, k = 60, limit = 5, enhance=None, rerank=None):
             print(f"Reranking top {limit} results using Cross Encoder Method")
         case _:
             pass
+    if evaluate: formatted_results = []
 
     for idx,result in enumerate(results[:limit], start=1):
         print(f"{idx} {result['title']}")
         print(f"RRF score: {result['rrf_score']}")
         print(f"BM25 rank: {result['bm25_rank']} and Semantic rank: {result['sem_rank']}")
-        print(f"LLM Rerank: {result['rerank_response']}")
+        # print(f"LLM Rerank: {result['rerank_response']}")
         print(f"Description: {result['description'][:100]}")
         print('-'*25)
+        if evaluate:
+            formatted_results.append(f"<result id={idx}>{result['title']}: {result['description'][:100]}")
+    if evaluate:
+        llm_results = llm_judge(query, "\n".join(formatted_results))
+        for idx, r in enumerate(results[:limit], start=1):
+            print(f"{idx} {r['title']}: {llm_results[idx-1]}/3")
